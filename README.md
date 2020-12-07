@@ -3,7 +3,7 @@
 Send Cloudtrail logs to Elasticsearch.  
 
 
-[Live Architecture Diagram Link - TBD](link)
+[Live Architecture Diagram Link - TBD](https://app.cloudcraft.co/view/e427f145-3e9b-4362-aed6-0b4eba1403c8?key=xUrf3XVBsbKPpO119ObJbQ)
 
 ![Architecture Diagram](s3-to-elasticsearch-cloudtrail.png)
 
