@@ -14,7 +14,7 @@ import aws_cdk.aws_elasticsearch as aws_elasticsearch
 import aws_cdk.aws_cognito as aws_cognito
 import aws_cdk.aws_elasticloadbalancingv2 as aws_elasticloadbalancingv2
 import aws_cdk.aws_ec2 as aws_ec2
-import aws_cdk.aws_kinesisfirehose as aws_kinesisfirehose
+import aws_cdk.aws_cloudtrail as aws_cloudtrail
 import inspect as inspect
 
 
@@ -90,7 +90,6 @@ class CdkStack(core.Stack):
         # AMAZON S3 BUCKETS 
         ###########################################################################
         cloudtrail_log_bucket = aws_s3.Bucket(self, "cloudtrail_log_bucket")
-        kinesis_log_bucket = aws_s3.Bucket(self, "kinesis_log_bucket")
 
 
         ###########################################################################
@@ -206,3 +205,25 @@ class CdkStack(core.Stack):
         sqs_to_elastic_cloud.add_environment("ELASTIC_CLOUD_USERNAME", "-")
         sqs_to_elastic_cloud.add_environment("QUEUEURL", sqs_to_elastic_cloud_queue.queue_url )
         sqs_to_elastic_cloud.add_environment("DEBUG", "False" )
+
+
+
+        ###########################################################################
+        # AWS COGNITO USER POOL
+        ###########################################################################
+        allevents_trail = aws_cloudtrail.Trail(self, "allevents_trail", bucket=cloudtrail_log_bucket, 
+                                                                        cloud_watch_log_group=None, 
+                                                                        cloud_watch_logs_retention=None, 
+                                                                        enable_file_validation=None, 
+                                                                        encryption_key=None, 
+                                                                        include_global_service_events=None, 
+                                                                        is_multi_region_trail=True, 
+                                                                        kms_key=None, 
+                                                                        management_events=aws_cloudtrail.ReadWriteType("ALL"), 
+                                                                        s3_key_prefix=None, 
+                                                                        send_to_cloud_watch_logs=False, 
+                                                                        sns_topic=None, 
+                                                                        trail_name=None)
+
+
+
