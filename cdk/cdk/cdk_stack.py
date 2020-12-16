@@ -17,15 +17,6 @@ import aws_cdk.aws_ec2 as aws_ec2
 import aws_cdk.aws_kinesisfirehose as aws_kinesisfirehose
 import inspect as inspect
 
-# import jsii
-# from ._jsii import *
-# from typing import Union
-# from typing import Union, Any, List, Optional, cast
-
-# from aws_cdk.core import CustomResource
-# import aws_cdk.aws_logs as logs
-# import aws_cdk.custom_resources as cr
-# import aws_cdk.aws_apigatewayv2 as aws_apigatewayv2
 
 
 ###########################################################################
@@ -90,14 +81,10 @@ class CdkStack(core.Stack):
         memory_size=4096,
         timeout=core.Duration.seconds(300)
         )
-
-        # sqs_to_elasticsearch_service.add_environment("kinesis_firehose_name", "-")
-        # sqs_to_elastic_cloud.add_environment("index_name", "-")
-
         ###########################################################################
         # AWS LAMBDA FUNCTIONS 
         ###########################################################################
-        # sqs_to_elasticsearch_service_permission = aws_lambda.Permission(*, principal, action=None, event_source_token=None, scope=None, source_account=None, source_arn=None)
+
 
         ###########################################################################
         # AMAZON S3 BUCKETS 
@@ -120,27 +107,32 @@ class CdkStack(core.Stack):
         ###########################################################################
         # AWS SNS TOPICS 
         ###########################################################################
-        cloudtrail_topic = aws_sns.Topic(self, "cloudtrail_topic")
+        cloudtrail_log_topic = aws_sns.Topic(self, "cloudtrail_log_topic")
 
 
         ###########################################################################
         # ADD AMAZON S3 BUCKET NOTIFICATIONS
         ###########################################################################
-        cloudtrail_log_bucket.add_event_notification(aws_s3.EventType.OBJECT_CREATED, aws_s3_notifications.SnsDestination(cloudtrail_topic))
+        cloudtrail_log_bucket.add_event_notification(aws_s3.EventType.OBJECT_CREATED, aws_s3_notifications.SnsDestination(cloudtrail_log_topic))
 
 
         ###########################################################################
         # AWS SQS QUEUES
         ###########################################################################
-        sqs_to_elastic_cloud_queue = aws_sqs.Queue(self, "sqs_to_elastic_cloud_queue", visibility_timeout=core.Duration.seconds(300))
-        sqs_to_elasticsearch_service_queue = aws_sqs.Queue(self, "sqs_to_elasticsearch_service_queue", visibility_timeout=core.Duration.seconds(300))
+        sqs_to_elasticsearch_service_queue_iqueue = aws_sqs.Queue(self, "sqs_to_elasticsearch_service_queue_iqueue")
+        sqs_to_elasticsearch_service_queue_dlq = aws_sqs.DeadLetterQueue(max_receive_count=10, queue=sqs_to_elasticsearch_service_queue_iqueue)
+        sqs_to_elasticsearch_service_queue = aws_sqs.Queue(self, "sqs_to_elasticsearch_service_queue", visibility_timeout=core.Duration.seconds(300), dead_letter_queue=sqs_to_elasticsearch_service_queue_dlq)
 
-        
+        sqs_to_elastic_cloud_queue_iqueue = aws_sqs.Queue(self, "sqs_to_elastic_cloud_queue_iqueue")
+        sqs_to_elastic_cloud_queue_dlq = aws_sqs.DeadLetterQueue(max_receive_count=10, queue=sqs_to_elastic_cloud_queue_iqueue)
+        sqs_to_elastic_cloud_queue = aws_sqs.Queue(self, "sqs_to_elastic_cloud_queue", visibility_timeout=core.Duration.seconds(300), dead_letter_queue=sqs_to_elastic_cloud_queue_dlq)
+
+
         ###########################################################################
         # AWS SNS TOPIC SUBSCRIPTIONS
         ###########################################################################
-        cloudtrail_topic.add_subscription(aws_sns_subscriptions.SqsSubscription(sqs_to_elastic_cloud_queue))
-        cloudtrail_topic.add_subscription(aws_sns_subscriptions.SqsSubscription(sqs_to_elasticsearch_service_queue))
+        cloudtrail_log_topic.add_subscription(aws_sns_subscriptions.SqsSubscription(sqs_to_elastic_cloud_queue))
+        cloudtrail_log_topic.add_subscription(aws_sns_subscriptions.SqsSubscription(sqs_to_elasticsearch_service_queue))
 
         
         ###########################################################################
@@ -158,17 +150,8 @@ class CdkStack(core.Stack):
         # AWS ELASTICSEARCH DOMAIN ACCESS POLICY 
         ###########################################################################
         this_aws_account = aws_iam.AccountPrincipal(account_id="012345678912")
-        # s3-to-elasticsearch-cloudtrail-domain_access_policy_statement = aws_iam.PolicyStatement(
-        #     principals=[this_aws_account],
-        #     effect=aws_iam.Effect.ALLOW,
-        #     actions=["es:*"],
-        #     resources=["*"]
-        #     )
-        # s3-to-elasticsearch-cloudtrail-domain_access_policy_statement_list=[]
-        # s3-to-elasticsearch-cloudtrail-domain_access_policy_statement_list.append(s3-to-elasticsearch-cloudtrail-domain_access_policy_statement)
 
-        elasticsearch_cloudtrail_domain = aws_elasticsearch.Domain(self, "s3-to-elasticsearch-cloudtrail-domain",
-            # access_policies=elasticsearch-cloudtrail-domain_access_policy_statement_list,
+        s3_to_elasticsearch_cloudtrail_logs_domain = aws_elasticsearch.Domain(self, "s3-to-elasticsearch-cloudtrail-logs-domain",
             version=aws_elasticsearch.ElasticsearchVersion.V7_1,
             capacity={
                 "master_nodes": 3,
@@ -191,7 +174,7 @@ class CdkStack(core.Stack):
         ###########################################################################
         # AMAZON COGNITO USER POOL
         ###########################################################################
-        s3_to_elasticsearch_user_pool = aws_cognito.UserPool(self, "s3-to-elasticsearch-cloudtrail-pool",
+        s3_to_elasticsearch_user_pool = aws_cognito.UserPool(self, "s3-to-elasticsearch-cloudtrial-logs-pool",
                                                             account_recovery=None, 
                                                             auto_verify=None, 
                                                             custom_attributes=None, 
@@ -213,73 +196,7 @@ class CdkStack(core.Stack):
                                                             )
 
 
-        ###########################################################################
-        # AMAZON KINESIS FIREHOSE STREAM
-        ###########################################################################
-        # kinesis_policy_statement = aws_iam.PolicyStatement(
-        #     effect=aws_iam.Effect.ALLOW,
-        #     # actions=["es:*", "s3:*", "kms:*", "kinesis:*", "lambda:*"],
-        #     actions=["*"],
-        #     resources=["*"]
-        #     )
-
-        # kinesis_policy_document = aws_iam.PolicyDocument()
-        # kinesis_policy_document.add_statements(kinesis_policy_statement)
-
-        kinesis_firehose_stream_role = aws_iam.Role( self, 
-            "BaseVPCIAMLogRole", 
-            assumed_by=aws_iam.ServicePrincipal('firehose.amazonaws.com'), 
-            role_name=None, 
-            inline_policies={ 
-                "AllowLogAccess": aws_iam.PolicyDocument( assign_sids=False, 
-                    statements=[ 
-                        aws_iam.PolicyStatement( 
-                            actions=[ '*', 'es:*', 'logs:PutLogEvents', 'logs:DescribeLogGroups', 'logs:DescribeLogsStreams' ], 
-                            effect=aws_iam.Effect('ALLOW'), 
-                            resources=['*'] 
-                        ) 
-                    ] 
-                ) 
-            } 
-        )        
-        
-        RetryOptions = aws_kinesisfirehose.CfnDeliveryStream.ElasticsearchRetryOptionsProperty(duration_in_seconds=300)
-        s3_configuration = aws_kinesisfirehose.CfnDeliveryStream.S3DestinationConfigurationProperty(
-            bucket_arn=kinesis_log_bucket.bucket_arn,
-            role_arn = kinesis_firehose_stream_role.role_arn)
-
-        ElasticsearchDestinationConfiguration = aws_kinesisfirehose.CfnDeliveryStream.ElasticsearchDestinationConfigurationProperty(
-            # "BufferingHints" : ElasticsearchBufferingHints,
-            # "CloudWatchLoggingOptions" : CloudWatchLoggingOptions,
-            # "ClusterEndpoint" : String,
-            domain_arn = elasticsearch_cloudtrail_domain.domain_arn,
-            index_name = "s3-to-elasticsearch-cloudtrail",
-            index_rotation_period = "OneHour",
-            # "ProcessingConfiguration" : ProcessingConfiguration,
-            retry_options = RetryOptions,
-            role_arn = kinesis_firehose_stream_role.role_arn,
-            # "S3BackupMode" : String,
-            s3_configuration = s3_configuration
-            # "TypeName" : String
-            # "VpcConfiguration" : VpcConfiguration
-        )
-
-        kinesis_firehose_stream = aws_kinesisfirehose.CfnDeliveryStream(self, "kinesis_firehose_stream",
-            delivery_stream_encryption_configuration_input=None, 
-            delivery_stream_name=None, 
-            delivery_stream_type=None, 
-            elasticsearch_destination_configuration=ElasticsearchDestinationConfiguration, 
-            extended_s3_destination_configuration=None, 
-            http_endpoint_destination_configuration=None, 
-            kinesis_stream_source_configuration=None, 
-            redshift_destination_configuration=None, 
-            s3_destination_configuration=None, 
-            splunk_destination_configuration=None, 
-            tags=None
-            )
-
-
-        sqs_to_elasticsearch_service.add_environment("FIREHOSE_NAME", kinesis_firehose_stream.ref )
+        sqs_to_elasticsearch_service.add_environment("ELASTICSEARCH_HOST", s3_to_elasticsearch_cloudtrail_logs_domain.domain_endpoint )
         sqs_to_elasticsearch_service.add_environment("QUEUEURL", sqs_to_elasticsearch_service_queue.queue_url )
         sqs_to_elasticsearch_service.add_environment("DEBUG", "False" )
 

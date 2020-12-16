@@ -14,8 +14,6 @@ import csv
 import os
 
 
-
-
 ################################################################################################################
 #   References
 ################################################################################################################
@@ -23,19 +21,9 @@ import os
 # https://docs.aws.amazon.com/AmazonS3/latest/dev/notification-content-structure.html
 
 
-
 ################################################################################################################
 #   Config
 ################################################################################################################
-# elasticcloud_secret_name = os.environ['ELASTIC_CLOUD_ID']
-# elasticcloud_secret_name = os.environ['ELASTIC_CLOUD_USERNAME']
-# elasticcloud_secret_name = os.environ['ELASTIC_CLOUD_PASSWORD']
-# logger = logging.getLogger()
-# logger = logging.getLogger(__name__)
-# logger.setLevel(logging.INFO)
-# local_event = {"Messages": [{"MessageId": "d7c42a19-d145-4511-90c5-f03d9a440f0a", "ReceiptHandle": "AQEBCzWbUdLHaPvIaHsTn/qlRHf5b31v4joEkK8vk8a6yZcC5t6PFZOwiGBX87e2AzLshceHxvgeezyumfxsqr9jrRlN4c+lbPSwqgpxHd/8MoMY184ygLMHO5hDSxC2H/kqdytmXLXlDQGvMg0Wpk05s8JRgqABeZqp45u6vw2jjg6zn4LpAqp7PbCjkezRKLRXG6MLyu6bntAVRQW8A15XxAItdYwesYtaqW5CH7Fwql5m9/DU11ng8uFpNedqVeScXr05BFA0NNgjma8NAjjPx04LdjSijs/7jPVvStrgrDOTLx1reTWiiHSp8rY8Sr901bh+Eg6n6Ur2GfRrGfSXrbiCzEJ0quANrC1MfSzw5XlUZP9a4iaNZsrEIoie+rKk3tE1haU+LJDKFQkb6mDv+SRVGRCwDd9cli3kZiBDvPEerG731nKmJ5g+OTTHLKnqcWLWbwAcZY9vKgBY0btN87ytp6Kgas6FgSiy4nmX+08=", "MD5OfBody": "d9715be551a977168000acd973a8072d", "Body": "{\n  \"Type\" : \"Notification\",\n  \"MessageId\" : \"f952167c-e75f-5371-b2dc-4e476c7f9027\",\n  \"TopicArn\" : \"arn:aws:sns:us-west-2:696965430582:s3-to-elasticsearch-access-logs-accesslogtopic6A6F66D7-1CVZECE32AT4M\",\n  \"Subject\" : \"Amazon S3 Notification\",\n  \"Message\" : \"{\\\"Records\\\":[{\\\"eventVersion\\\":\\\"2.1\\\",\\\"eventSource\\\":\\\"aws:s3\\\",\\\"awsRegion\\\":\\\"us-west-2\\\",\\\"eventTime\\\":\\\"2020-11-27T23:16:47.489Z\\\",\\\"eventName\\\":\\\"ObjectCreated:Put\\\",\\\"userIdentity\\\":{\\\"principalId\\\":\\\"A2HRK4T7OWQKNJ\\\"},\\\"requestParameters\\\":{\\\"sourceIPAddress\\\":\\\"172.16.120.122\\\"},\\\"responseElements\\\":{\\\"x-amz-request-id\\\":\\\"950C0A33F57DF771\\\",\\\"x-amz-id-2\\\":\\\"SKd42p7jsiL+doA2Qz8B3gYtE8lCT8kkol67jBCl3+40ltnzOVNMCX2JLXdv4ET8e1KlCmTN/n4QgjYZn72XTg5HWQf92pQh\\\"},\\\"s3\\\":{\\\"s3SchemaVersion\\\":\\\"1.0\\\",\\\"configurationId\\\":\\\"NTY3YTQ4NWItMDVmOS00MTA2LTg4OTgtOWFmZTEwODllMzRj\\\",\\\"bucket\\\":{\\\"name\\\":\\\"s3-to-elasticsearch-acces-accesslogbucket5c1457b7-151mo29j9uf83\\\",\\\"ownerIdentity\\\":{\\\"principalId\\\":\\\"A316ENPQ0L9WVA\\\"},\\\"arn\\\":\\\"arn:aws:s3:::s3-to-elasticsearch-acces-accesslogbucket5c1457b7-151mo29j9uf83\\\"},\\\"object\\\":{\\\"key\\\":\\\"2020-11-27-23-16-48-08AB4BC89388039F\\\",\\\"size\\\":3092,\\\"eTag\\\":\\\"6f24045964158499b97615447dce0710\\\",\\\"sequencer\\\":\\\"005FC188E0308AA05A\\\"}}}]}\",\n  \"Timestamp\" : \"2020-11-27T23:16:48.770Z\",\n  \"SignatureVersion\" : \"1\",\n  \"Signature\" : \"fxmieXOR3/1YJJMhfGw/RVr/XREAuc6rlCd+7jOqIJwhUSSDSIJC+Tqlbbmvw9NDn1y1m3XW0VpiY+xWUGgWujJm5xb6zGIXlU9+g50rGVhX/UpSbEPB4q5gOZzaL+vKbyB2LVDSI8Q631fKz7uaBLbAbWJoF3ZjNfzaFT76R32RgxKoLzQl1QRuT0GjiSCCW6y/N5FHc5fOngdn1R166raQP0kJojvGglR/dPmGtJi2pIUpXlxMJnf/YCs+4FsvcNNNuGa2xASuFVLZ77puViNQXTC6wbLg3YJmfAFYd8YqEkjWVnBauFtlnSRMIinyl5EpNso4s0TdY6BmSZnYzQ==\",\n  \"SigningCertURL\" : \"https://sns.us-west-2.amazonaws.com/SimpleNotificationService-010a507c1833636cd94bdb98bd93083a.pem\",\n  \"UnsubscribeURL\" : \"https://sns.us-west-2.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-west-2:696965430582:s3-to-elasticsearch-access-logs-accesslogtopic6A6F66D7-1CVZECE32AT4M:3e906df4-be15-4b1c-a98f-48086fb5f63b\"\n}"}], "ResponseMetadata": {"RequestId": "569d7114-2050-56b2-b4e6-292fac8af0b7", "HTTPStatusCode": 200, "HTTPHeaders": {"x-amzn-requestid": "569d7114-2050-56b2-b4e6-292fac8af0b7", "date": "Fri, 27 Nov 2020 23:24:10 GMT", "content-type": "text/xml", "content-length": "3607"}, "RetryAttempts": 0}}
-
-
 region = os.environ['AWS_REGION']
 firehose_name = os.environ['FIREHOSE_NAME']
 QUEUEURL = os.environ['QUEUEURL']
@@ -44,12 +32,9 @@ sqs_client = boto3.client('sqs')
 s3_client = boto3.resource('s3')
 firehose_client = boto3.client('firehose')
 debug = os.getenv('DEBUG', False) in (True, 'True')
-
 ################################################################################################################
 #   Config
 ################################################################################################################
-
-
 
 
 def get_elasticsearch_time(time_from_record):
@@ -85,22 +70,6 @@ def get_elasticsearch_time(time_from_record):
     newtime = str( year + '-' + month_number_string + '-' + day + 'T' + hour + ':' + minutes + ':' + seconds + 'Z' )
 
     return newtime
-
-
-def get_json_data(json_data):
-    # Fix Time for Elasticsearch
-    Time = json_data[0]['Time']
-    # TimeOffset = json_data[0]['Time - Offset']
-    if debug:
-        print(Time)
-    # [23/Nov/2020:07:43:07
-
-    json_data[0]['TimeForElasticSearch'] = get_elasticsearch_time(Time)
-
-    if debug:
-        print("\n\nTimeForElasticSearch created from log")
-        print(json_data[0]['TimeForElasticSearch'])
-    return json_data
 
 
 def get_sqs_message(QUEUEURL, sqs_client):
@@ -147,26 +116,15 @@ def get_sqs_message(QUEUEURL, sqs_client):
     return receive_message_response
 
 
-
-
-
-
-
-def process_sqs_message(message):
+def retrieve_s3_file(message):
     ################################################################################################################
     #   Unpack the message from SQS and get bucket name and object name
     ################################################################################################################
-    # event_messages = json.loads(event)
-    # Messages = json.loads(event_messages['Messages'])
-
-    # Messages = event['Messages']
-    # message = event
-    # for message in event:
     if debug:
         print("\nmessage = {0}".format(message))
         print("\ntype(message) = {0}\n".format(type(message)))
 
-    message_body = message['Body']
+    message_body = message['body']
     if debug:
         print("\nmessage_body = {0}".format(message_body))
         print("\ntype(message_body) = {0}\n".format(type(message_body)))
@@ -186,7 +144,14 @@ def process_sqs_message(message):
         print("\nmessage_within_message_body = {0}".format(message_within_message_body))
         print("\ntype(message_within_message_body) = {0}\n".format(type(message_within_message_body)))
 
-    s3_notification_records = message_within_message_body['Records']
+    try:
+        s3_notification_records = message_within_message_body['Records']
+    except:
+        print("Failed to retrieve \'Records\' from message_within_message_body! ")
+        if message_within_message_body['Event'] == "s3:TestEvent":
+            print("Found Amazon S3 notification TestEvent")               
+            print("TestEvent=\n{0}".format(message_within_message_body["Event"]) )                     #https://docs.aws.amazon.com/AmazonS3/latest/dev/notification-content-structure.html
+            raise Exception("....Skipping message")
 
     if debug:
         print("\ns3_notification_records = {0}".format(s3_notification_records))
@@ -196,15 +161,11 @@ def process_sqs_message(message):
     if debug:
         print(s3_bucket_name + ":" + s3_object_key)
 
-    # BUCKET_NAME = 'amazon-s3-bucket-load-test-storagebucket-7el453fxmzen' # replace with your bucket name
-    # KEY = '000009_20:26:20.000009_diagram.png' # replace with your object key
-
     ################################################################################################################
     #   Get the data from S3  
     ################################################################################################################
     try:
         s3_client.Bucket(s3_bucket_name).download_file(s3_object_key, file_path)
-        # s3_client.Bucket(BUCKET_NAME).download_file(KEY, '/Users/druadria/Documents/codeforwork/s3-to-elasticsearch-access-logs/record.json')
         if debug:
             print("\n S3 File Download: COMPLETE\n")
     except botocore.exceptions.ClientError as e:
@@ -217,19 +178,6 @@ def process_lambda_sqs_record(record):
     ################################################################################################################
     #   Unpack the message from SQS and get bucket name and object name
     ################################################################################################################
-    # event_messages = json.loads(event)
-    # Messages = json.loads(event_messages['Messages'])
-
-    # Messages = event['Messages']
-    # message = record
-    # for message in event:
-    # print("\nmessage = {0}".format(message))
-    # print("\ntype(message) = {0}\n".format(type(message)))
-
-    # message_body = message['body']
-    # print("\nmessage_body = {0}".format(message_body))
-    # print("\ntype(message_body) = {0}\n".format(type(message_body)))
-
     if debug:
         print("\nrecord = {0}".format(record))
         print("\ntype(record) = {0}\n".format(type(record)))
@@ -278,13 +226,11 @@ def process_lambda_sqs_record(record):
             raise
 
 
-
 def convert_and_save_json():
     ################################################################################################################
     #   Convert and Save the data from S3 in JSON format
     ################################################################################################################
     df = pd.read_csv(file_path, sep=' ', names=[ 'Bucket Owner', 'Bucket', 'Time', 'Time - Offset', 'Remote IP', 'Requester ARN/Canonical ID','Request ID','Operation', 'Key', 'Request-URI', 'HTTP status', 'Error Code', 'Bytes Sent', 'Object Size','Total Time','Turn-Around Time', 'Referrer', 'User-Agent', 'Version Id', 'Host Id', 'Signature Version','Cipher Suite','Authentication Type', 'Host Header', 'TLS version'],usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24])
-
     df.to_json(file_path, orient='records')
 
     with open(file_path, 'r') as f:
@@ -297,41 +243,32 @@ def convert_and_save_json():
     return json_data
 
 
-def format_json_data(json_data):
-    ################################################################################################################
-    #   for each object, set the correct data type in the dictionary
-    ################################################################################################################
-    # integer_list = ['Turn-Around Time', 'Total Time', 'Object Size', 'Bytes Sent']
-    for key in json_data:
-        if debug:
-            print("\nkey = {0}".format(key))
-            print("\ntype(json_data[key]) = {0}\n".format(type(json_data[key])))
-        json_data[key] = str(json_data[key])
-
-    return json_data
-
-
 def put_object_in_kinesis_firehose_stream(json_data_from_local_file):
     ################################################################################################################
     #   for each object, Put records into the Firehose stream
-    ################################################################################################################
-    json_data_list = get_json_data(json_data_from_local_file)
-    for unformatted_json_data in json_data_list:
+    ################################################################################################################    
+    for json_data in json_data_from_local_file:
 
-        # print('Putting 1 record into the Firehose one at a time\n')
-        # print("\nunformatted_json_data = {0}".format(unformatted_json_data))
-        # print("\ntype(unformatted_json_data) = {0}\n".format(type(unformatted_json_data)))
+        # Fix Time for Elasticsearch
+        Time = json_data['Time']
+        # TimeOffset = json_data['Time - Offset']
+        json_data['TimeForElasticSearch'] = get_elasticsearch_time(Time)
 
-        json_data = format_json_data(unformatted_json_data)
-
-        if debug:
-            for key in json_data:
+        ################################################################################################################
+        #   for each object, set the correct data type in the dictionary
+        ################################################################################################################
+        for key in json_data:
+            if debug:
+                print("\n(Starting) key = {0}".format(key))
+                print("\n(Starting) value = {0}".format(json_data[key]))
+                print("\n(Starting) type(value) = {0}\n".format( type(json_data[key]) ))
+            json_data[key] = str(json_data[key])
+            if debug:
                 print("\n(Final) key = {0}".format(key))
                 print("\n(Final) value = {0}".format(json_data[key]))
                 print("\n(Final) type(value) = {0}\n".format( type(json_data[key]) ))
 
-        record = json_data
-        record_string = json.dumps(record)
+        record_string = json.dumps(json_data)
         encoded_record = record_string.encode("ascii")
 
         # Put the record into the Firehose stream
@@ -345,8 +282,7 @@ def put_object_in_kinesis_firehose_stream(json_data_from_local_file):
             print(e)
             exit(1)
 
-
-    print("COMPLETED: Putting {0} records into the Firehose one at a time".format( len(json_data_list) ))
+    print("COMPLETED: Putting {0} records into the Firehose one at a time".format( len(json_data_from_local_file) ))
 
 
 ################################################################################################################
@@ -355,10 +291,6 @@ def put_object_in_kinesis_firehose_stream(json_data_from_local_file):
 ################################################################################################################
 ################################################################################################################
 def lambda_handler(event, context):
-    # logger.info('## ENVIRONMENT VARIABLES')
-    # logger.info(os.environ)
-    # logger.info('## EVENT')
-    # logger.info(event)
     if debug:
         print("\n Lambda event={0}\n".format(json.dumps(event)))
 
@@ -366,15 +298,20 @@ def lambda_handler(event, context):
         # Todo 
         # secret_dictionary = get_secret(context)
         for Message in event['Messages']:
-            process_sqs_message(Message)
-            json_data_from_local_file = convert_and_save_json()
-            put_object_in_kinesis_firehose_stream(json_data_from_local_file)
+            try:
+                retrieve_s3_file(Message)
+                json_data_from_local_file = convert_and_save_json()
+                put_object_in_kinesis_firehose_stream(json_data_from_local_file)
+            except:
+                print("Failed to process Message: {0}".format(Message) )
     else:   #RUNNING A LAMBDA INVOCATION
         for Record in event['Records']:
-            process_lambda_sqs_record(Record)
-            json_data_from_local_file = convert_and_save_json()
-            put_object_in_kinesis_firehose_stream(json_data_from_local_file)
-
+            try:
+                retrieve_s3_file(Record)
+                json_data_from_local_file = convert_and_save_json()
+                put_object_in_kinesis_firehose_stream(json_data_from_local_file)
+            except:
+                print("Failed to process Record: {0}".format(Record) )
 ################################################################################################################
 ################################################################################################################
 #   LAMBDA HANDLER 
@@ -386,28 +323,14 @@ def lambda_handler(event, context):
 ################################################################################################################
 # LOCAL TESTING and DEBUGGING  
 ################################################################################################################
-
-# for x in range(0, 300):
 if __name__ == "__main__":
-    # for x in range(0, 300):
     context = "-"
+    # for x in range(0, 300):
     while True:
         event = get_sqs_message(QUEUEURL, sqs_client)
         if debug:
             print("\n event={0}\n".format(json.dumps(event)))
         lambda_handler(event,context)
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
