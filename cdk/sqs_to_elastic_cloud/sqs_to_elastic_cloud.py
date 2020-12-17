@@ -2,7 +2,6 @@ from __future__ import print_function
 from botocore.exceptions import ClientError
 from elasticsearch import Elasticsearch
 import datetime as datetime
-import pandas as pd
 import botocore
 import logging
 import boto3
@@ -13,7 +12,7 @@ import json
 import io
 import csv
 import os
-
+import gzip
 
 ################################################################################################################
 #   References
@@ -36,8 +35,7 @@ secret_dictionary['elasticcloud_cloud_id'] = os.environ['ELASTIC_CLOUD_ID']
 secret_dictionary['elasticcloud_username'] = os.environ['ELASTIC_CLOUD_USERNAME']
 secret_dictionary['elasticcloud_password'] = os.environ['ELASTIC_CLOUD_PASSWORD']
 
-# index_name = "s3-to-elasticcloud-cloudtrail-logs"
-file_path = '/tmp/record.json'
+file_path = '/tmp/record.json.gz'
 sqs_client = boto3.client('sqs')
 s3_client = boto3.resource('s3')
 
@@ -195,7 +193,7 @@ def retrieve_s3_file(message):
         print("\nmessage = {0}".format(message))
         print("\ntype(message) = {0}\n".format(type(message)))
 
-    message_body = message['body']
+    message_body = message['Body']
     if debug:
         print("\nmessage_body = {0}".format(message_body))
         print("\ntype(message_body) = {0}\n".format(type(message_body)))
@@ -250,8 +248,13 @@ def get_json_data_from_local_file():
     ################################################################################################################
     #   Get the data from S3 in JSON format
     ################################################################################################################
-    with open(file_path, 'r') as f:
-        json_data = json.load(f)
+    # with open(file_path, 'r') as f:
+    #     json_data = json.load(f)
+
+    f = gzip.open(file_path,'rb')
+    file_content_bytes = f.read()
+    file_content = file_content_bytes.decode("utf-8")
+    json_data = json.loads(file_content)
 
     if debug:
         print("\n\nDISPLAY JSON FILE CONTENTS")
@@ -264,19 +267,19 @@ def send_object_to_elasticcloud(json_data_from_local_file):
     ################################################################################################################
     #   for each object, Put records into the Elastic Cloud cluster
     ################################################################################################################    
-    for json_data in json_data_from_local_file:
+    for json_data in json_data_from_local_file['Records']:
 
-        for key in json_data:
-            if debug:
-                print("\n(Starting) key = {0}".format(key))
-                print("\n(Starting) value = {0}".format(json_data[key]))
-                print("\n(Starting) type(value) = {0}\n".format( type(json_data[key]) ))
+        # for key in json_data:
+        #     if debug:
+        #         print("\n(Starting) key = {0}".format(key))
+        #         print("\n(Starting) value = {0}".format(json_data[key]))
+        #         print("\n(Starting) type(value) = {0}\n".format( type(json_data[key]) ))
 
 
         # Fix Time for Elasticsearch
-        Time = json_data['Time']
+        # Time = json_data['Time']
         # TimeOffset = json_data['Time - Offset']
-        json_data['TimeForElasticSearch'] = get_elasticsearch_time(Time)
+        # json_data['TimeForElasticSearch'] = get_elasticsearch_time(Time)
 
         ################################################################################################################
         #   for each object, set the correct data type in the dictionary
@@ -292,6 +295,11 @@ def send_object_to_elasticcloud(json_data_from_local_file):
                 print("\n(Final) value = {0}".format(json_data[key]))
                 print("\n(Final) type(value) = {0}\n".format( type(json_data[key]) ))
 
+        index_prefix = "cloudtrail"
+        service = json_data['eventSource']
+        eventName = json_data['eventName']
+        index_name_caps = index_prefix + "-" + service + "-" + eventName
+        index_name = index_name_caps.lower()
 
 
         # Put the record into the Elastic Cloud cluster

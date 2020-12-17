@@ -1,7 +1,9 @@
 from __future__ import print_function
+from elasticsearch import Elasticsearch, RequestsHttpConnection
+from requests_aws4auth import AWS4Auth
 from botocore.exceptions import ClientError
+from elasticsearch import Elasticsearch
 import datetime as datetime
-import pandas as pd
 import botocore
 import logging
 import boto3
@@ -12,6 +14,7 @@ import json
 import io
 import csv
 import os
+import gzip
 
 
 ################################################################################################################
@@ -19,22 +22,32 @@ import os
 ################################################################################################################
 # https://stackoverflow.com/questions/37703634/how-to-import-a-text-file-on-aws-s3-into-pandas-without-writing-to-disk
 # https://docs.aws.amazon.com/AmazonS3/latest/dev/notification-content-structure.html
+# https://elasticsearch-py.readthedocs.io/en/7.10.0/
 
 
 ################################################################################################################
 #   Config
 ################################################################################################################
 region = os.environ['AWS_REGION']
-firehose_name = os.environ['FIREHOSE_NAME']
 QUEUEURL = os.environ['QUEUEURL']
-file_path = '/tmp/record.json'
+ELASTICSEARCH_HOST = os.environ['ELASTICSEARCH_HOST']
+debug = os.getenv('DEBUG', False) in (True, 'True')
+
+file_path = '/tmp/record.json.gz'
 sqs_client = boto3.client('sqs')
 s3_client = boto3.resource('s3')
-firehose_client = boto3.client('firehose')
-debug = os.getenv('DEBUG', False) in (True, 'True')
-################################################################################################################
-#   Config
-################################################################################################################
+
+# Connect to Elasticsearch Service Domain
+service = 'es'
+credentials = boto3.Session().get_credentials()
+awsauth = AWS4Auth(credentials.access_key, credentials.secret_key, region, service, session_token=credentials.token)
+elasticsearchclient = Elasticsearch(
+    hosts = [{'host': ELASTICSEARCH_HOST, 'port': 443}],
+    http_auth = awsauth,
+    use_ssl = True,
+    verify_certs = True,
+    connection_class = RequestsHttpConnection
+)
 
 
 def get_elasticsearch_time(time_from_record):
@@ -124,7 +137,7 @@ def retrieve_s3_file(message):
         print("\nmessage = {0}".format(message))
         print("\ntype(message) = {0}\n".format(type(message)))
 
-    message_body = message['body']
+    message_body = message['Body']
     if debug:
         print("\nmessage_body = {0}".format(message_body))
         print("\ntype(message_body) = {0}\n".format(type(message_body)))
@@ -174,85 +187,43 @@ def retrieve_s3_file(message):
         else:
             raise
 
-def process_lambda_sqs_record(record):
+
+def get_json_data_from_local_file():
     ################################################################################################################
-    #   Unpack the message from SQS and get bucket name and object name
+    #   Get the data from S3 in JSON format
     ################################################################################################################
-    if debug:
-        print("\nrecord = {0}".format(record))
-        print("\ntype(record) = {0}\n".format(type(record)))
+    # with open(file_path, 'r') as f:
+    #     json_data = json.load(f)
 
-    record_body = record['body']
-    if debug:
-        print("\nrecord_body = {0}".format(record_body))
-        print("\ntype(record_body) = {0}\n".format(type(record_body)))
-
-    record_body_dict = json.loads(record_body)
-    if debug:
-        print("\nrecord_body_dict = {0}".format(record_body_dict))
-        print("\ntype(record_body_dict) = {0}\n".format(type(record_body_dict)))
-
-    message_within_record_body_str = record_body_dict['Message']
-    if debug:
-        print("\nmessage_within_record_body_str = {0}".format(message_within_record_body_str))
-        print("\ntype(message_within_record_body_str) = {0}\n".format(type(message_within_record_body_str)))
-
-    message_within_record_body = json.loads(message_within_record_body_str)
-    if debug:
-        print("\nmessage_within_record_body = {0}".format(message_within_record_body))
-        print("\ntype(message_within_record_body) = {0}\n".format(type(message_within_record_body)))
-
-    s3_notification_records = message_within_record_body['Records']
+    f = gzip.open(file_path,'rb')
+    file_content_bytes = f.read()
+    file_content = file_content_bytes.decode("utf-8")
+    json_data = json.loads(file_content)
 
     if debug:
-        print("\ns3_notification_records = {0}".format(s3_notification_records))
-
-    s3_bucket_name = s3_notification_records[0]['s3']['bucket']['name']
-    s3_object_key = s3_notification_records[0]['s3']['object']['key']
-    if debug:
-        print(s3_bucket_name + ":" + s3_object_key)
-
-    ################################################################################################################
-    #   Get the data from S3  
-    ################################################################################################################
-    try:
-        s3_client.Bucket(s3_bucket_name).download_file(s3_object_key, file_path)
-        if debug:
-            print("\n S3 File Download: COMPLETE\n")
-    except botocore.exceptions.ClientError as e:
-        if e.response['Error']['Code'] == "404":
-            print("The object does not exist.")
-        else:
-            raise
-
-
-def convert_and_save_json():
-    ################################################################################################################
-    #   Convert and Save the data from S3 in JSON format
-    ################################################################################################################
-    df = pd.read_csv(file_path, sep=' ', names=[ 'Bucket Owner', 'Bucket', 'Time', 'Time - Offset', 'Remote IP', 'Requester ARN/Canonical ID','Request ID','Operation', 'Key', 'Request-URI', 'HTTP status', 'Error Code', 'Bytes Sent', 'Object Size','Total Time','Turn-Around Time', 'Referrer', 'User-Agent', 'Version Id', 'Host Id', 'Signature Version','Cipher Suite','Authentication Type', 'Host Header', 'TLS version'],usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24])
-    df.to_json(file_path, orient='records')
-
-    with open(file_path, 'r') as f:
-        json_data = json.load(f)
-
-    if debug:
-        print("\n\nDISPLAY CREATED JSON FILE CONTENTS")
+        print("\n\nDISPLAY JSON FILE CONTENTS")
         print(json_data)
 
     return json_data
 
 
-def put_object_in_kinesis_firehose_stream(json_data_from_local_file):
+def send_object_to_elasticsearch(json_data_from_local_file):
     ################################################################################################################
-    #   for each object, Put records into the Firehose stream
+    #   for each object, Put records into the Elasticsearch cluster
     ################################################################################################################    
-    for json_data in json_data_from_local_file:
+    for json_data in json_data_from_local_file['Records']:
+
+        # for key in json_data:
+        #     if debug:
+        #         print("\n(Starting) key = {0}".format(key))
+        #         print("\n(Starting) value = {0}".format(json_data[key]))
+        #         print("\n(Starting) type(value) = {0}\n".format( type(json_data[key]) ))
+
 
         # Fix Time for Elasticsearch
-        Time = json_data['Time']
+        # Time = json_data['Time']
         # TimeOffset = json_data['Time - Offset']
-        json_data['TimeForElasticSearch'] = get_elasticsearch_time(Time)
+        # json_data['TimeForElasticSearch'] = get_elasticsearch_time(Time)
 
         ################################################################################################################
         #   for each object, set the correct data type in the dictionary
@@ -268,22 +239,25 @@ def put_object_in_kinesis_firehose_stream(json_data_from_local_file):
                 print("\n(Final) value = {0}".format(json_data[key]))
                 print("\n(Final) type(value) = {0}\n".format( type(json_data[key]) ))
 
-        record_string = json.dumps(json_data)
-        encoded_record = record_string.encode("ascii")
+        index_prefix = "cloudtrail"
+        service = json_data['eventSource']
+        eventName = json_data['eventName']
+        index_name_caps = index_prefix + "-" + service + "-" + eventName
+        index_name = index_name_caps.lower()
 
-        # Put the record into the Firehose stream
+
+        # Put the record into the Elasticsearch Service Domain
         try:
-            result = firehose_client.put_record(DeliveryStreamName=firehose_name, Record={'Data': encoded_record})
-            # time.sleep(0.1)
-            if debug:
-                print('\nSUCCESS: SENDING into the Firehose one at a time')
-        except ClientError as e:
-            print('\nFAILED: SENDING into the Firehose one at a time\n')
+            res = elasticsearchclient.index(index=index_name, body=json_data)
+            print('res[\'result\']=')
+            print(res['result'])
+            print('\nSUCCESS: SENDING into the Elasticsearch Service Domain one at a time')
+        except Exception as e:
+            print('\nFAILED: SENDING into the Elasticsearch Service Domain one at a time\n')
             print(e)
             exit(1)
 
-    print("COMPLETED: Putting {0} records into the Firehose one at a time".format( len(json_data_from_local_file) ))
-
+    print('COMPLETED: Putting {0} records into the Elasticsearch Service Domain one at a time'.format( len(json_data_from_local_file) ))
 
 ################################################################################################################
 ################################################################################################################
@@ -300,16 +274,16 @@ def lambda_handler(event, context):
         for Message in event['Messages']:
             try:
                 retrieve_s3_file(Message)
-                json_data_from_local_file = convert_and_save_json()
-                put_object_in_kinesis_firehose_stream(json_data_from_local_file)
+                json_data_from_local_file = get_json_data_from_local_file()
+                send_object_to_elasticsearch(json_data_from_local_file)
             except:
                 print("Failed to process Message: {0}".format(Message) )
     else:   #RUNNING A LAMBDA INVOCATION
         for Record in event['Records']:
             try:
                 retrieve_s3_file(Record)
-                json_data_from_local_file = convert_and_save_json()
-                put_object_in_kinesis_firehose_stream(json_data_from_local_file)
+                json_data_from_local_file = get_json_data_from_local_file()
+                send_object_to_elasticsearch(json_data_from_local_file)
             except:
                 print("Failed to process Record: {0}".format(Record) )
 ################################################################################################################
@@ -331,6 +305,4 @@ if __name__ == "__main__":
         if debug:
             print("\n event={0}\n".format(json.dumps(event)))
         lambda_handler(event,context)
-
-
 
