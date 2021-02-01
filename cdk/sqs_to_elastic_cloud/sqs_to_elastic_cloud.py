@@ -107,36 +107,65 @@ def get_secret(context):
 
 
 def get_elasticsearch_time(time_from_record):
-    # Need:
-    # 2018-04-23T10:45:13.899Z
     # Have:
     # [23/Nov/2020:07:43:07
+    # Need:
+    # 2018-04-23T10:45:13.899Z
     # Got:
     # 2020-Nov-23T07:43:07Z
+    # 2021-Jan-1T06:23:08Z
+
+
     if debug:
         print('time_from_record=' + time_from_record)
-    year = time_from_record[8:12]
-    month = time_from_record[4:7]
-    day = time_from_record[1:3]
-    hour = time_from_record[13:15]
-    minutes = time_from_record[16:18]
-    seconds = time_from_record[19:21]
+
+    time_from_record_after_replacement = time_from_record.replace('[', '')
+
+
+    if debug:
+        print('time_from_record_after_replacement=' + time_from_record_after_replacement)
+
+    time_from_record_list = time_from_record_after_replacement.split(':')
+    date_from_record = time_from_record_list[0]
+    date_from_record_list = date_from_record.split("/")
+
+    day = date_from_record_list[0]
+    month = date_from_record_list[1]
+    year = date_from_record_list[2]
+    hour = time_from_record_list[1]
+    minutes = time_from_record_list[2]
+    seconds = time_from_record_list[3]
+
+    # year = time_from_record[8:12]
+    # month = time_from_record[4:7]
+    # day = time_from_record[1:3]
+    # hour = time_from_record[13:15]
+    # minutes = time_from_record[16:18]
+    # seconds = time_from_record[19:21]
 
     # convert month name to month number
-    month_name = month
-    datetime_object = datetime.datetime.strptime(month_name, "%b")
+    datetime_object = datetime.datetime.strptime(month, "%b")
     month_number = datetime_object.month
     month_number_string = str(month_number)
 
+    if len(day) == 1:
+        day = "0" + day
+    if len(month_number_string) == 1:
+        month_number_string = "0" + month_number_string
+
+
     if debug:
-        print(year)
-        print(month_number_string)
         print(day)
+        print(month_number_string)
+        print(year)
         print(hour)
         print(minutes)
         print(seconds)
 
     newtime = str( year + '-' + month_number_string + '-' + day + 'T' + hour + ':' + minutes + ':' + seconds + 'Z' )
+
+    if debug:
+        print('newtime=' + newtime)
 
     return newtime
 

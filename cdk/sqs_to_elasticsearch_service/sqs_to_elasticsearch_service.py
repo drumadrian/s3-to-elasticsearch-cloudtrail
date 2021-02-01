@@ -51,36 +51,65 @@ elasticsearchclient = Elasticsearch(
 
 
 def get_elasticsearch_time(time_from_record):
-    # Need:
-    # 2018-04-23T10:45:13.899Z
     # Have:
     # [23/Nov/2020:07:43:07
+    # Need:
+    # 2018-04-23T10:45:13.899Z
     # Got:
     # 2020-Nov-23T07:43:07Z
+    # 2021-Jan-1T06:23:08Z
+
+
     if debug:
         print('time_from_record=' + time_from_record)
-    year = time_from_record[8:12]
-    month = time_from_record[4:7]
-    day = time_from_record[1:3]
-    hour = time_from_record[13:15]
-    minutes = time_from_record[16:18]
-    seconds = time_from_record[19:21]
+
+    time_from_record_after_replacement = time_from_record.replace('[', '')
+
+
+    if debug:
+        print('time_from_record_after_replacement=' + time_from_record_after_replacement)
+
+    time_from_record_list = time_from_record_after_replacement.split(':')
+    date_from_record = time_from_record_list[0]
+    date_from_record_list = date_from_record.split("/")
+
+    day = date_from_record_list[0]
+    month = date_from_record_list[1]
+    year = date_from_record_list[2]
+    hour = time_from_record_list[1]
+    minutes = time_from_record_list[2]
+    seconds = time_from_record_list[3]
+
+    # year = time_from_record[8:12]
+    # month = time_from_record[4:7]
+    # day = time_from_record[1:3]
+    # hour = time_from_record[13:15]
+    # minutes = time_from_record[16:18]
+    # seconds = time_from_record[19:21]
 
     # convert month name to month number
-    month_name = month
-    datetime_object = datetime.datetime.strptime(month_name, "%b")
+    datetime_object = datetime.datetime.strptime(month, "%b")
     month_number = datetime_object.month
     month_number_string = str(month_number)
 
+    if len(day) == 1:
+        day = "0" + day
+    if len(month_number_string) == 1:
+        month_number_string = "0" + month_number_string
+
+
     if debug:
-        print(year)
-        print(month_number_string)
         print(day)
+        print(month_number_string)
+        print(year)
         print(hour)
         print(minutes)
         print(seconds)
 
     newtime = str( year + '-' + month_number_string + '-' + day + 'T' + hour + ':' + minutes + ':' + seconds + 'Z' )
+
+    if debug:
+        print('newtime=' + newtime)
 
     return newtime
 
@@ -137,10 +166,16 @@ def retrieve_s3_file(message):
         print("\nmessage = {0}".format(message))
         print("\ntype(message) = {0}\n".format(type(message)))
 
-    message_body = message['Body']
-    if debug:
-        print("\nmessage_body = {0}".format(message_body))
-        print("\ntype(message_body) = {0}\n".format(type(message_body)))
+    if "body" in message:
+        message_body = message['body']
+        if debug:
+            print("\nmessage_body = {0}".format(message_body))
+            print("\ntype(message_body) = {0}\n".format(type(message_body)))
+    else: 
+        message_body = message['Body']
+        if debug:
+            print("\nmessage_body = {0}".format(message_body))
+            print("\ntype(message_body) = {0}\n".format(type(message_body)))
 
     message_body_dict = json.loads(message_body)
     if debug:
@@ -179,6 +214,7 @@ def retrieve_s3_file(message):
     ################################################################################################################
     try:
         s3_client.Bucket(s3_bucket_name).download_file(s3_object_key, file_path)
+        # s3_client.Bucket(BUCKET_NAME).download_file(KEY, '/Users/druadria/Documents/codeforwork/s3-to-elasticsearch-access-logs/record.json')
         if debug:
             print("\n S3 File Download: COMPLETE\n")
     except botocore.exceptions.ClientError as e:
@@ -269,23 +305,23 @@ def lambda_handler(event, context):
         print("\n Lambda event={0}\n".format(json.dumps(event)))
 
     if context == "-": #RUNNING A LOCAL EXECUTION 
-        # Todo 
-        # secret_dictionary = get_secret(context)
+        number_of_messages_in_event = len(event['Messages'])
+        message_number = 1
         for Message in event['Messages']:
-            try:
-                retrieve_s3_file(Message)
-                json_data_from_local_file = get_json_data_from_local_file()
-                send_object_to_elasticsearch(json_data_from_local_file)
-            except:
-                print("Failed to process Message: {0}".format(Message) )
+            print("processing message {} of {}".format(message_number, number_of_messages_in_event))
+            retrieve_s3_file(Message)
+            json_data_from_local_file = get_json_data_from_local_file()
+            send_object_to_elasticsearch(json_data_from_local_file)
+            message_number += 1
     else:   #RUNNING A LAMBDA INVOCATION
+        number_of_records_in_event = len(event['Records'])
+        record_number = 1            
         for Record in event['Records']:
-            try:
-                retrieve_s3_file(Record)
-                json_data_from_local_file = get_json_data_from_local_file()
-                send_object_to_elasticsearch(json_data_from_local_file)
-            except:
-                print("Failed to process Record: {0}".format(Record) )
+            print("processing record {} of {}".format(record_number, number_of_records_in_event))
+            retrieve_s3_file(Record)
+            json_data_from_local_file = get_json_data_from_local_file()
+            send_object_to_elasticsearch(json_data_from_local_file)
+            record_number += 1
 ################################################################################################################
 ################################################################################################################
 #   LAMBDA HANDLER 

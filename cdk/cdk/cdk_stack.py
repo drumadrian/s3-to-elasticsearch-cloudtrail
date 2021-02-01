@@ -71,7 +71,7 @@ class CdkStack(core.Stack):
         runtime=aws_lambda.Runtime.PYTHON_3_7,
         code=aws_lambda.Code.asset('sqs_to_elastic_cloud'),
         memory_size=4096,
-        timeout=core.Duration.seconds(300)
+        timeout=core.Duration.seconds(301)
         )
 
         sqs_to_elasticsearch_service = aws_lambda.Function(self,'sqs_to_elasticsearch_service',
@@ -79,7 +79,7 @@ class CdkStack(core.Stack):
         runtime=aws_lambda.Runtime.PYTHON_3_7,
         code=aws_lambda.Code.asset('sqs_to_elasticsearch_service'),
         memory_size=4096,
-        timeout=core.Duration.seconds(300)
+        timeout=core.Duration.seconds(301)
         )
         ###########################################################################
         # AWS LAMBDA FUNCTIONS 
