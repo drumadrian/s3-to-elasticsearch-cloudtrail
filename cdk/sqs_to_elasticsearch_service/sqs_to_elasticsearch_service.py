@@ -277,16 +277,21 @@ def send_object_to_elasticsearch(json_data_from_local_file):
         for json_data in json_data_from_local_file['Records']:
 
             ################################################################################################################
-            #   for each object, set the correct data type in the dictionary
+            #   for each object, set the correct data type in the dictionary 
             ################################################################################################################
             for key in json_data:
                 if debug:
                     print("\n(Starting) key = {0}".format(key))
                     print("\n(Starting) value = {0}".format(json_data[key]))
                     print("\n(Starting) type(value) = {0}\n".format( type(json_data[key]) ))
-                json_data[key] = str(json_data[key])
-                if json_data[key] == "":
-                    json_data[key] = None                
+
+                if json_data[key] == None:
+                    pass
+                elif json_data[key] == "":
+                    json_data[key] = None
+                else:
+                    json_data[key] = str(json_data[key])
+
                 if debug:
                     print("\n(Final) key = {0}".format(key))
                     print("\n(Final) value = {0}".format(json_data[key]))
@@ -301,7 +306,7 @@ def send_object_to_elasticsearch(json_data_from_local_file):
     else:   #NOT A CLOUDTRAIL RECORD, PROBABLY A CLOUDTRAIL DIGEST FILE. 
         if debug:
             print("\n\nNOT A CLOUDTRAIL RECORD, PROBABLY A CLOUDTRAIL DIGEST FILE!\n\n")
-        time.sleep(5)
+        # time.sleep(5)
 
         json_data = json_data_from_local_file
         index_name = "cloudtrail-digest-files"
@@ -315,31 +320,22 @@ def send_object_to_elasticsearch(json_data_from_local_file):
                 print("\n(Starting) value = {0}".format(json_data[key]))
                 print("\n(Starting) type(value) = {0}\n".format( type(json_data[key]) ))
 
+        if json_data[key] == None:
+            pass
+        elif json_data[key] == "":
+            json_data[key] = None
+        else:
+            json_data[key] = str(json_data[key])
+
         for k,v in json_data.items():
-            v = str(v)
-
-            if v == '' or v is None:
-                if debug:
-                    print("\n\nDeleted key with empty string value or None to avoid Elasticsearch parsing error!\n\n")
-                del json_data[k]
-
             if isinstance(v, list): 
-                v = listToString(v)
-
-
+                json_data[k] = listToString(v)
 
     for key in json_data:
             if debug:
                 print("\n(Final) key = {0}".format(key))
                 print("\n(Final) value = {0}".format(json_data[key]))
                 print("\n(Final) type(value) = {0}\n".format( type(json_data[key]) ))
-
-
-            # if json_data[key] is None or json_data[key] == "":
-            #     time.sleep(5)
-                # if debug:
-                #     print("\n\nDeleting key with empty string value or None to avoid Elasticsearch parsing error!\n\n")
-            #     del json_data[key]
 
     ################################################################################################################
     # Put the record into the Elasticsearch Service Domain
