@@ -14,6 +14,7 @@ import aws_cdk.aws_elasticsearch as aws_elasticsearch
 import aws_cdk.aws_cognito as aws_cognito
 import aws_cdk.aws_elasticloadbalancingv2 as aws_elasticloadbalancingv2
 import aws_cdk.aws_ec2 as aws_ec2
+import aws_cdk.aws_logs as logs
 import aws_cdk.aws_cloudtrail as aws_cloudtrail
 import inspect as inspect
 
@@ -71,7 +72,8 @@ class CdkStack(core.Stack):
         runtime=aws_lambda.Runtime.PYTHON_3_7,
         code=aws_lambda.Code.asset('sqs_to_elastic_cloud'),
         memory_size=4096,
-        timeout=core.Duration.seconds(301)
+        timeout=core.Duration.seconds(301),
+        log_retention=logs.RetentionDays.ONE_DAY
         )
 
         sqs_to_elasticsearch_service = aws_lambda.Function(self,'sqs_to_elasticsearch_service',
@@ -79,7 +81,8 @@ class CdkStack(core.Stack):
         runtime=aws_lambda.Runtime.PYTHON_3_7,
         code=aws_lambda.Code.asset('sqs_to_elasticsearch_service'),
         memory_size=4096,
-        timeout=core.Duration.seconds(301)
+        timeout=core.Duration.seconds(301),
+        log_retention=logs.RetentionDays.ONE_DAY
         )
         ###########################################################################
         # AWS LAMBDA FUNCTIONS 
