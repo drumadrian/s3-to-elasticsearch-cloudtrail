@@ -72,7 +72,7 @@ class CdkStack(core.Stack):
         runtime=aws_lambda.Runtime.PYTHON_3_7,
         code=aws_lambda.Code.asset('sqs_to_elastic_cloud'),
         memory_size=4096,
-        timeout=core.Duration.seconds(301),
+        timeout=core.Duration.seconds(300),
         log_retention=logs.RetentionDays.ONE_DAY
         )
 
@@ -81,7 +81,7 @@ class CdkStack(core.Stack):
         runtime=aws_lambda.Runtime.PYTHON_3_7,
         code=aws_lambda.Code.asset('sqs_to_elasticsearch_service'),
         memory_size=4096,
-        timeout=core.Duration.seconds(301),
+        timeout=core.Duration.seconds(300),
         log_retention=logs.RetentionDays.ONE_DAY
         )
         ###########################################################################

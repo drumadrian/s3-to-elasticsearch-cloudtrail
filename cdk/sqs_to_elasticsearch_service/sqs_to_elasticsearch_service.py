@@ -23,7 +23,10 @@ import gzip
 # https://stackoverflow.com/questions/37703634/how-to-import-a-text-file-on-aws-s3-into-pandas-without-writing-to-disk
 # https://docs.aws.amazon.com/AmazonS3/latest/dev/notification-content-structure.html
 # https://elasticsearch-py.readthedocs.io/en/7.10.0/
-
+# https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-log-file-validation-digest-file-structure.html
+# https://stackoverflow.com/questions/15924632/empty-string-in-elasticsearch-date-field
+# https://www.geeksforgeeks.org/python-ways-to-remove-a-key-from-dictionary/
+# https://www.geeksforgeeks.org/python-check-if-a-given-object-is-list-or-not/
 
 ################################################################################################################
 #   Config
@@ -243,55 +246,113 @@ def get_json_data_from_local_file():
     return json_data
 
 
+    ################################################################################################################
+    # Python program to convert a list to string 
+    ################################################################################################################
+def listToString(s):  
+    # initialize an empty string 
+    str1 = ""  
+    
+    # traverse in the string   
+    for ele in s:  
+        str1 += ele   
+        str1 += ", "   
+    
+    # return string   
+    return str1  
+        
+
+
 def send_object_to_elasticsearch(json_data_from_local_file):
     ################################################################################################################
     #   for each object, Put records into the Elasticsearch cluster
     ################################################################################################################    
-    for json_data in json_data_from_local_file['Records']:
+    index_name = ""
+    json_data = {}
 
-        # for key in json_data:
-        #     if debug:
-        #         print("\n(Starting) key = {0}".format(key))
-        #         print("\n(Starting) value = {0}".format(json_data[key]))
-        #         print("\n(Starting) type(value) = {0}\n".format( type(json_data[key]) ))
+    if debug: 
+        print("\n\n\n\n  json_data_from_local_file = {0}\n\n\n".format(json_data_from_local_file))
 
+    if 'Records' in json_data_from_local_file:
+        for json_data in json_data_from_local_file['Records']:
 
-        # Fix Time for Elasticsearch
-        # Time = json_data['Time']
-        # TimeOffset = json_data['Time - Offset']
-        # json_data['TimeForElasticSearch'] = get_elasticsearch_time(Time)
+            ################################################################################################################
+            #   for each object, set the correct data type in the dictionary
+            ################################################################################################################
+            for key in json_data:
+                if debug:
+                    print("\n(Starting) key = {0}".format(key))
+                    print("\n(Starting) value = {0}".format(json_data[key]))
+                    print("\n(Starting) type(value) = {0}\n".format( type(json_data[key]) ))
+                json_data[key] = str(json_data[key])
+                if json_data[key] == "":
+                    json_data[key] = None                
+                if debug:
+                    print("\n(Final) key = {0}".format(key))
+                    print("\n(Final) value = {0}".format(json_data[key]))
+                    print("\n(Final) type(value) = {0}\n".format( type(json_data[key]) ))
 
+            index_prefix = "cloudtrail"
+            service = json_data['eventSource']
+            eventName = json_data['eventName']
+            index_name_caps = index_prefix + "-" + service + "-" + eventName
+            index_name = index_name_caps.lower()
+
+    else:   #NOT A CLOUDTRAIL RECORD, PROBABLY A CLOUDTRAIL DIGEST FILE. 
+        if debug:
+            print("\n\nNOT A CLOUDTRAIL RECORD, PROBABLY A CLOUDTRAIL DIGEST FILE!\n\n")
+        time.sleep(5)
+
+        json_data = json_data_from_local_file
+        index_name = "cloudtrail-digest-files"
         ################################################################################################################
         #   for each object, set the correct data type in the dictionary
         ################################################################################################################
+
         for key in json_data:
             if debug:
                 print("\n(Starting) key = {0}".format(key))
                 print("\n(Starting) value = {0}".format(json_data[key]))
                 print("\n(Starting) type(value) = {0}\n".format( type(json_data[key]) ))
-            json_data[key] = str(json_data[key])
+
+        for k,v in json_data.items():
+            v = str(v)
+
+            if v == '' or v is None:
+                if debug:
+                    print("\n\nDeleted key with empty string value or None to avoid Elasticsearch parsing error!\n\n")
+                del json_data[k]
+
+            if isinstance(v, list): 
+                v = listToString(v)
+
+
+
+    for key in json_data:
             if debug:
                 print("\n(Final) key = {0}".format(key))
                 print("\n(Final) value = {0}".format(json_data[key]))
                 print("\n(Final) type(value) = {0}\n".format( type(json_data[key]) ))
 
-        index_prefix = "cloudtrail"
-        service = json_data['eventSource']
-        eventName = json_data['eventName']
-        index_name_caps = index_prefix + "-" + service + "-" + eventName
-        index_name = index_name_caps.lower()
 
+            # if json_data[key] is None or json_data[key] == "":
+            #     time.sleep(5)
+                # if debug:
+                #     print("\n\nDeleting key with empty string value or None to avoid Elasticsearch parsing error!\n\n")
+            #     del json_data[key]
 
-        # Put the record into the Elasticsearch Service Domain
-        try:
-            res = elasticsearchclient.index(index=index_name, body=json_data)
-            print('res[\'result\']=')
-            print(res['result'])
-            print('\nSUCCESS: SENDING into the Elasticsearch Service Domain one at a time')
-        except Exception as e:
-            print('\nFAILED: SENDING into the Elasticsearch Service Domain one at a time\n')
-            print(e)
-            exit(1)
+    ################################################################################################################
+    # Put the record into the Elasticsearch Service Domain
+    ################################################################################################################
+    try:
+        res = elasticsearchclient.index(index=index_name, body=json_data)
+        print('res[\'result\']=')
+        print(res['result'])
+        print('\nSUCCESS: SENDING into the Elasticsearch Service Domain one at a time')
+    except Exception as e:
+        print('\nFAILED: SENDING into the Elasticsearch Service Domain one at a time\n')
+        print(e)
+        exit(1)
 
     print('COMPLETED: Putting {0} records into the Elasticsearch Service Domain one at a time'.format( len(json_data_from_local_file) ))
 
